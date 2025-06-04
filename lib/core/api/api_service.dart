@@ -6,22 +6,24 @@ class ApiService {
   static const String baseUrl = 'https://api.restful-api.dev';
 
   // GET: List all objects
-  Future<List<Gadget>> fetchGadgets() async {
-    final response = await http.get(Uri.parse('$baseUrl/objects'));
-    if (response.statusCode == 200) {
-      final List data = json.decode(response.body);
-      return data.map((json) => Gadget.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load gadgets');
-    }
+Future<List<Gadget>> fetchGadgets() async {
+  final response = await http.get(Uri.parse('$baseUrl/objects'));
+  if (response.statusCode == 200) {
+    final List<dynamic> data = json.decode(response.body);
+    return data.map((json) => Gadget.fromJson(json)).toList();
+  } else {
+    throw Exception('Failed to load gadgets');
   }
+}
+
 
   // GET: List objects by IDs
   Future<List<Gadget>> fetchGadgetsByIds(List<String> ids) async {
     final query = ids.map((id) => 'id=$id').join('&');
     final response = await http.get(Uri.parse('$baseUrl/objects?$query'));
     if (response.statusCode == 200) {
-      final List data = json.decode(response.body);
+      final body = json.decode(response.body);
+      final List data = body['data'];
       return data.map((json) => Gadget.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load gadgets by ids');
@@ -32,12 +34,14 @@ class ApiService {
   Future<Gadget> fetchGadgetById(String id) async {
     final response = await http.get(Uri.parse('$baseUrl/objects/$id'));
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+      final body = json.decode(response.body);
+      final data = body['data'];
       return Gadget.fromJson(data);
     } else {
       throw Exception('Failed to load gadget by id');
     }
   }
+
 
   // POST: Add object
   Future<Gadget> addGadget(Gadget gadget) async {
@@ -95,3 +99,4 @@ class ApiService {
     }
   }
 }
+

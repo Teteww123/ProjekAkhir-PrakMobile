@@ -1,48 +1,164 @@
 import 'package:flutter/material.dart';
-import '../core/api/api_service.dart';
 import '../models/gadget.dart';
+import '../core/db/gadget_database.dart';
+import '../presenters/gadget_list_presenter.dart';
+import '../views/gadget_form_page.dart';
+import '../views/gadget_list_view.dart';
 
 class GadgetListPage extends StatefulWidget {
-  const GadgetListPage({Key? key}) : super(key: key);
+  const GadgetListPage({super.key});
 
   @override
   State<GadgetListPage> createState() => _GadgetListPageState();
 }
 
-class _GadgetListPageState extends State<GadgetListPage> {
-  late Future<List<Gadget>> _futureGadgets;
+class _GadgetListPageState extends State<GadgetListPage> implements GadgetListView {
+  late GadgetListPresenter presenter;
+  List<Gadget> gadgets = [];
+  bool isLoading = false;
+  String? errorMessage;
+  String? successMessage;
 
   @override
   void initState() {
     super.initState();
-    _futureGadgets = ApiService().fetchGadgets();
+    presenter = GadgetListPresenter(this, GadgetDatabase());
+
+    // Cek data Hive, kalau kosong sync dari API
+    GadgetDatabase().getAllGadgets().then((data) {
+      if (data.isEmpty) {
+        presenter.syncFromApi();
+      } else {
+        presenter.loadGadgets();
+      }
+    });
+  }
+
+  @override
+  void showGadgets(List<Gadget> gadgets) {
+    setState(() {
+      this.gadgets = gadgets;
+      isLoading = false;
+      errorMessage = null;
+      successMessage = null;
+    });
+  }
+
+  @override
+  void showLoading() {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+      successMessage = null;
+    });
+  }
+
+  @override
+  void showError(String message) {
+    setState(() {
+      isLoading = false;
+      errorMessage = message;
+    });
+  }
+
+  @override
+  void showSuccess(String message) {
+    setState(() {
+      isLoading = false;
+      successMessage = message;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _addGadget() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GadgetFormPage(
+          onSubmit: (gadget) {
+            presenter.addGadget(gadget);
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _editGadget(Gadget gadget) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GadgetFormPage(
+          gadget: gadget,
+          onSubmit: (g) {
+            presenter.updateGadget(g);
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Gadget>>(
-      future: _futureGadgets,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text("Error: ${snapshot.error}"));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text("No gadgets found."));
-        } else {
-          final gadgets = snapshot.data!;
-          return ListView.builder(
-            itemCount: gadgets.length,
-            itemBuilder: (context, index) {
-              final gadget = gadgets[index];
-              return ListTile(
-                title: Text(gadget.name ?? 'No Name'),
-                subtitle: Text(gadget.id ?? 'No ID'),
-              );
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Daftar Gadget"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: () {
+              presenter.syncFromApi();
             },
-          );
-        }
-      },
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addGadget,
+        child: const Icon(Icons.add),
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+              ? Center(child: Text("Error: $errorMessage"))
+              : ListView.builder(
+  itemCount: gadgets.length,
+  itemBuilder: (context, index) {
+    final gadget = gadgets[index];
+    final data = gadget.data;
+
+    // Ambil price, jika null cari field lain yang tidak null
+    String? subtitleText;
+    if (data['price'] != null && data['price'].toString().isNotEmpty) {
+      subtitleText = data['price'].toString();
+    } else {
+      // Cari field lain yang ada isinya selain price
+      final alt = data.entries.firstWhere(
+        (e) => e.key != 'price' && e.value != null && e.value.toString().isNotEmpty,
+        orElse: () => const MapEntry('', null),
+      );
+      subtitleText = (alt.value != null) ? alt.value.toString() : '-';
+    }
+
+    return ListTile(
+      title: Text(gadget.name),
+      subtitle: Text(subtitleText ?? '-'),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () => _editGadget(gadget),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () => presenter.deleteGadget(gadget.id),
+          ),
+        ],
+      ),
+    );
+  },
+),
     );
   }
 }

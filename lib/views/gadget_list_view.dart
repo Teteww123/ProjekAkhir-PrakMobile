@@ -4,4 +4,5 @@ abstract class GadgetListView {
   void showGadgets(List<Gadget> gadgets);
   void showLoading();
   void showError(String message);
+  void showSuccess(String message);
 }

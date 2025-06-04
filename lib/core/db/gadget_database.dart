@@ -4,30 +4,38 @@ import '../../models/gadget.dart';
 class GadgetDatabase {
   static const String boxName = 'gadgets';
 
-  Future<Box<Gadget>> openBox() async {
-    if (!Hive.isAdapterRegistered(0)) {
-      Hive.registerAdapter(GadgetAdapter());
+  Future<Box<Gadget>> _openBox() async {
+    if (Hive.isBoxOpen(boxName)) {
+      return Hive.box<Gadget>(boxName);
     }
     return await Hive.openBox<Gadget>(boxName);
   }
 
-  Future<void> insertGadget(Gadget gadget) async {
-    final box = await openBox();
-    await box.put(gadget.id, gadget);
-  }
+  // Tambahkan fungsi ini agar bisa diakses langsung dari presenter
+  Future<Box<Gadget>> openBoxDirect() => _openBox();
 
   Future<List<Gadget>> getAllGadgets() async {
-    final box = await openBox();
+    final box = await _openBox();
     return box.values.toList();
   }
 
+  Future<void> addGadget(Gadget gadget) async {
+    final box = await _openBox();
+    await box.put(gadget.id, gadget);
+  }
+
   Future<void> updateGadget(Gadget gadget) async {
-    final box = await openBox();
+    final box = await _openBox();
     await box.put(gadget.id, gadget);
   }
 
   Future<void> deleteGadget(String id) async {
-    final box = await openBox();
+    final box = await _openBox();
     await box.delete(id);
+  }
+
+  Future<Gadget?> getGadgetById(String id) async {
+    final box = await _openBox();
+    return box.get(id);
   }
 }

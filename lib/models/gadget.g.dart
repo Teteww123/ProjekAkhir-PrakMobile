@@ -19,7 +19,7 @@ class GadgetAdapter extends TypeAdapter<Gadget> {
     return Gadget(
       id: fields[0] as String,
       name: fields[1] as String,
-      data: (fields[2] as Map?)?.cast<String, dynamic>(),
+      data: (fields[2] as Map).cast<String, dynamic>(),
       imagePath: fields[3] as String?,
     );
   }

@@ -5,7 +5,7 @@ import 'package:aplikasi_projek/main.dart';
 void main() {
   testWidgets('MyApp menampilkan judul dan pesan', (WidgetTester tester) async {
     // Build aplikasi dan trigger frame.
-   await tester.pumpWidget(MyApp());
+   await tester.pumpWidget(const MyApp(isLoggedIn: false));
 
     // Verifikasi apakah ada teks judul dan pesan pada tampilan awal.
     expect(find.text('Gadget Catalog'), findsOneWidget);

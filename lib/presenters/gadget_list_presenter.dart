@@ -1,7 +1,7 @@
 import '../views/gadget_list_view.dart';
 import '../core/db/gadget_database.dart';
 import '../models/gadget.dart';
-import '../core/api/api_service.dart'; // Tambahkan import ini
+import '../core/api/api_service.dart'; 
 
 class GadgetListPresenter {
   final GadgetListView view;
@@ -19,7 +19,7 @@ class GadgetListPresenter {
     }
   }
 
-  /// Fungsi baru: sinkronisasi dari API ke Hive
+  /// sinkronisasi dari API ke Hive
   Future<void> syncFromApi() async {
     view.showLoading();
     try {
